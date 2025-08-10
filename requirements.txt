@@ -1,0 +1,7 @@
+fastapi==0.112.2
+uvicorn[standard]==0.30.6
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+boto3==1.34.162
+kafka-python==2.0.2
+onnxruntime==1.18.1

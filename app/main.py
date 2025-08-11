@@ -1,87 +1,86 @@
-from fastapi import FastAPI
-from datetime import datetime, timezone
-import os, cv2
-import numpy as np
+# app/main.py
+import os
+from fastapi import FastAPI, HTTPException
 
-from .schemas import InferRequest, InferResponse, Prediction, InferenceMetrics
+# .env 사용하고 싶으면(선택)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+from .schemas import (
+    TestStartedEventDTO,
+    AiDiagnosisCompletedEventDTO,
+    InferResponse,
+    Prediction,
+    InferenceMetrics,
+)
 from .frame_selector import select_topk_spray_frames
 from .inference import WasherONNXModel
 from .kafka_producer import publish_diagnosis
-from .config import ROI_POLYGON, TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
+from .kafka_consumer import start_background_consumer   # ★ 컨슈머 시작용
+from .config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
 from .s3_io import download_s3_to_temp, upload_bytes_to_s3
 
 app = FastAPI(title="washerFluid_ai (ONNX)")
 MODEL = WasherONNXModel()
 
-def to_np_polygon(poly_list):
-    if not poly_list:
-        return None
-    arr = np.array(poly_list, dtype=np.int32)
-    return arr
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
 
 @app.post("/infer", response_model=InferResponse)
-def infer(req: InferRequest):
-    video_path = download_s3_to_temp(req.video_s3_uri)
+def infer(req: TestStartedEventDTO):
+    # 1) 입력 매핑
+    video_uri = req.collect_data_path  # vehicleAudit DTO와 일치
 
-    roi_np = to_np_polygon(ROI_POLYGON)
-    top_frames, metrics = select_topk_spray_frames(
-        video_path, k=max(1, TOPK), sample_fps=FRAME_EVERY_SEC, roi_polygon=roi_np
+    # 2) 영상 다운로드 & 전처리
+    local_path = download_s3_to_temp(video_uri)
+    best_list, metrics = select_topk_spray_frames(
+        local_path, topk=TOPK, every_sec=FRAME_EVERY_SEC, method=METHOD
     )
+    if not best_list:
+        raise HTTPException(status_code=422, detail="no valid frame found")
+    best = best_list[0]
 
-    # 추론 및 집계
-    probs_abn = []
-    best = top_frames[0]
-    for item in top_frames:
-        prob = MODEL.predict_proba(item["frame"])  # dict like {"NORMAL":0.2,"ABNORMAL":0.8}
-        p_abn = float(prob.get("ABNORMAL", 0.0))
-        probs_abn.append(p_abn)
+    # 3) 분류 추론
+    label_idx, confidence = MODEL.predict(best["image"])
+    label = "ABNORMAL" if label_idx == 1 else "NORMAL"
 
-    if METHOD == "max":
-        p_video = max(probs_abn)
-    elif METHOD == "vote":
-        votes = sum(1 for p in probs_abn if p >= 0.5)
-        p_video = votes / len(probs_abn)
-    else:  # mean (default)
-        p_video = float(np.mean(probs_abn))
+    # 4) 증거 프레임 업로드
+    frame_s3_uri = None
+    if best.get("image_bytes"):
+        frame_key = f"evidence/{req.audit_id}/{req.inspection_id}.jpg"
+        frame_s3_uri = upload_bytes_to_s3(
+            best["image_bytes"], key=frame_key, content_type="image/jpeg"
+        )
 
-    label = "ABNORMAL" if p_video >= THR_VIDEO else "NORMAL"
-    confidence = p_video if label == "ABNORMAL" else 1.0 - p_video
-    defect = None
-
-    # 증거 프레임은 분사 스코어가 가장 큰 프레임(=top[0])
-    ok, jpg = cv2.imencode(".jpg", best["frame"])
-    evidence_key = (
-        f"evidence/{req.audit_id}/washer/"
-        f"{os.path.basename(req.video_s3_uri)}_f{best['idx']:04d}.jpg"
-    )
-    frame_s3_uri = upload_bytes_to_s3(jpg.tobytes(), evidence_key, "image/jpeg")
-
-    # 동기 응답
+    # 5) HTTP 응답(디버그/확인용)
     resp = InferResponse(
-        status="ok",
+        status="OK",
         max_frame_index=int(best["idx"]),
         max_frame_s3_uri=frame_s3_uri,
-        prediction=Prediction(label=label, defect_type=defect, confidence=round(confidence, 4)),
+        prediction=Prediction(label=label, defect_type=None, confidence=float(confidence)),
         metrics=InferenceMetrics(**metrics),
     )
 
-    # Kafka 발행
+    # 6) vehicleAudit에 보낼 카프카 이벤트(완료)
+    done = AiDiagnosisCompletedEventDTO(
+        audit_id=req.audit_id,
+        inspection_id=req.inspection_id,
+        inspection_type=req.inspection_type,   # "WASHER_FLUID"
+        is_defect=(label == "ABNORMAL"),
+        collect_data_path=video_uri,
+        result_data_path=frame_s3_uri,
+        diagnosis_result=label,
+    )
     publish_diagnosis(
         key_audit_id=req.audit_id,
-        payload={
-            "audit_id": req.audit_id,
-            "car_id": req.car_id,
-            "line_code": req.line_code,
-            "process": "WASHER_FLUID",
-            "result": {
-                "label": label,
-                "defect_type": defect,
-                "confidence": round(confidence, 4),
-                "metrics": {**metrics, "video_abnormal_prob": round(p_video, 4)},
-                "evidence": {"max_frame_s3_uri": frame_s3_uri, "frame_index": int(best['idx'])},
-            },
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        },
+        payload=done.dict(by_alias=True, exclude_none=True),
     )
-
     return resp
+
+@app.on_event("startup")
+def _startup():
+    start_background_consumer()  # 백그라운드로 test-started 구독 시작

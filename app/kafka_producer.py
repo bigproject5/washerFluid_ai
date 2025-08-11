@@ -19,3 +19,4 @@ def publish_diagnosis(key_audit_id: int, payload: dict):
     p = get_producer()
     p.send(KAFKA_TOPIC, key=key_audit_id, value=payload)
     p.flush()
+    

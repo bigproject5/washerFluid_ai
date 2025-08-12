@@ -1,6 +1,6 @@
 import os, json
 
-MODEL_PATH = os.getenv("MODEL_PATH", "models/washer_model.onnx")
+MODEL_PATH = os.getenv("MODEL_PATH", "models/washer_efficientnet_b0_v1.onnx")
 CONFIG_PATH = os.getenv("CONFIG_PATH", "models/washer_config.json")
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "ai-diagnosis-completed")

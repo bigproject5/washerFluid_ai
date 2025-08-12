@@ -47,14 +47,26 @@ def _split_s3(s3_uri: str):
     return rest[:i], rest[i + 1 :]
 
 def download_s3_to_temp(s3_or_https_uri: str) -> str:
-    s3_uri = normalize_to_s3_uri(s3_or_https_uri)
-    bucket, key = _split_s3(s3_uri)
-    s3 = _client()
-    _, ext = os.path.splitext(key)
-    fd, tmp = tempfile.mkstemp(suffix=ext or ".bin")
-    os.close(fd)
-    s3.download_file(bucket, key, tmp)
-    return tmp
+    print(f"[s3_io] Downloading: {s3_or_https_uri}")
+
+    try:
+        s3_uri = normalize_to_s3_uri(s3_or_https_uri)
+        bucket, key = _split_s3(s3_uri)
+
+        s3 = _client()
+        _, ext = os.path.splitext(key)
+        fd, tmp = tempfile.mkstemp(suffix=ext or ".bin")
+        os.close(fd)
+
+        s3.download_file(bucket, key, tmp)
+        file_size = os.path.getsize(tmp)
+        print(f"[s3_io] ✅ Downloaded {file_size} bytes to {tmp}")
+
+        return tmp
+
+    except Exception as e:
+        print(f"[s3_io] ❌ Download failed: {e}")
+        raise
 
 def upload_bytes_to_s3(data: bytes, key: str, content_type: str = "application/octet-stream") -> str:
     if not BUCKET:

@@ -24,17 +24,16 @@ class WasherONNXModel:
         probs = (exps / exps.sum(axis=1, keepdims=True))[0]
         return {self.classes[i]: float(probs[i]) for i in range(len(self.classes))}
 
-    def predict(self, bgr, expected_type: Literal["BINARY", "MULTICLASS"] = "BINARY") -> Tuple[str, float, str]:
+    def predict(self, bgr, expected_type: Literal["BINARY", "MULTICLASS"] = "BINARY") -> Tuple[int, float]:
         prob = self.predict_proba(bgr)
         if expected_type == "BINARY":
             p_abn = float(prob.get("ABNORMAL", 0.0))
             p_nor = float(prob.get("NORMAL", 0.0))
             if p_abn >= p_nor:
-                return "ABNORMAL", p_abn, None
+                return ABN_IDX, p_abn  # 1, confidence
             else:
-                return "NORMAL", p_nor, None
+                return NOR_IDX, p_nor  # 0, confidence
         else:
             best_cls = max(prob, key=prob.get)
-            label = "NORMAL" if best_cls == "NORMAL" else "ABNORMAL"
-            defect = None if label == "NORMAL" else best_cls
-            return label, float(prob[best_cls]), defect
+            best_idx = 1 if best_cls == "ABNORMAL" else 0
+            return best_idx, float(prob[best_cls])

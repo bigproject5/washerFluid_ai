@@ -12,7 +12,7 @@ class TestStartedEventDTO(BaseModel):
     collect_data_path: str = Field(..., alias="collectDataPath")  # S3 경로(영상/이미지)
 
     class Config:
-        allow_population_by_field_name = True  # snake_case도 허용
+        populate_by_name = True  # Pydantic V2 호환
 
 # (참고) 기존 Prediction/InferResponse 등은 필요시 유지
 class Prediction(BaseModel):
@@ -43,4 +43,4 @@ class AiDiagnosisCompletedEventDTO(BaseModel):
     diagnosis_result: str = Field(..., alias="diagnosisResult")            # "NORMAL" 또는 "ABNORMAL: <defect>"
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True  # Pydantic V2 호환

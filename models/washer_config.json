@@ -1,0 +1,12 @@
+{
+  "model_name": "efficientnet_b0",
+  "img_size": 320,
+  "method": "mean",
+  "thr_video": 0.5,
+  "topk": 5,
+  "frame_every_sec": 1.0,
+  "label_map": {
+    "normal": 0,
+    "abnormal": 1
+  }
+}

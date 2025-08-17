@@ -47,6 +47,7 @@ def _process(event: dict):
         print(f"[kafka_consumer] AI inference completed. label_idx: {label_idx}, confidence: {p}")
 
         is_defect = (label_idx == 1)
+        print(f"[DEBUG] label_idx={label_idx}, is_defect={is_defect}, bool={bool(is_defect)}")
 
         # 증거 프레임 업로드
         print(f"[kafka_consumer] Uploading evidence frame...")
@@ -61,9 +62,8 @@ def _process(event: dict):
         print(f"[kafka_consumer] Evidence frame uploaded to: {frame_s3}")
 
         print(f"[kafka_consumer] Publishing diagnosis result...")
-        publish_diagnosis(
-            key_audit_id=audit_id,
-            payload={
+
+        payload_data = {
                 "auditId": audit_id,
                 "inspectionId": inspection_id,
                 "inspectionType": inspection_type,
@@ -72,7 +72,27 @@ def _process(event: dict):
                 "resultDataPath": frame_s3,
                 "diagnosisResult": "ABNORMAL" if is_defect else "NORMAL"
             }
+
+        import json
+        print(f"[DEBUG] 전송할 JSON: {json.dumps(payload_data, indent=2)}")
+
+# 기존 publish_diagnosis 호출 수정 ↓ ↓ ↓
+        publish_diagnosis(
+            key_audit_id=audit_id,
+            payload=payload_data
         )
+        #publish_diagnosis(
+        #    key_audit_id=audit_id,
+        #    payload={
+         #       "auditId": audit_id,
+        #      "inspectionId": inspection_id,
+         #       "inspectionType": inspection_type,
+         #       "isDefect": bool(is_defect),        
+          #      "collectDataPath": video_uri,
+           #     "resultDataPath": frame_s3,
+           #     "diagnosisResult": "ABNORMAL" if is_defect else "NORMAL"
+            #}
+        #)
         print(f"[kafka_consumer] Process completed successfully for audit_id: {audit_id}")
 
     except Exception as e:

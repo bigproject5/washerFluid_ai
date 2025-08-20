@@ -17,7 +17,7 @@ from schemas import (
     InferenceMetrics,
 )
 from frame_selector import select_topk_spray_frames
-from inference import WasherONNXModel
+from inference import WasherONNXModel, generate_comprehensive_diagnosis  # ← 함수 import 추가
 from kafka_producer import publish_diagnosis
 from kafka_consumer import start_background_consumer   # ★ 컨슈머 시작용
 from config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
@@ -48,6 +48,9 @@ def infer(req: TestStartedEventDTO):
     label_idx, confidence = MODEL.predict(best["image"])
     label = "ABNORMAL" if label_idx == 1 else "NORMAL"
 
+    # ★ 상세 판정 문장 생성 (새로 추가)
+    detailed_diagnosis = generate_comprehensive_diagnosis(label, confidence)
+
     # 4) 증거 프레임 업로드
     frame_s3_uri = None
     if best.get("image_bytes"):
@@ -73,7 +76,7 @@ def infer(req: TestStartedEventDTO):
         is_defect=(label == "ABNORMAL"),
         collect_data_path=video_uri,
         result_data_path=frame_s3_uri,
-        diagnosis_result=label,
+        diagnosis_result=detailed_diagnosis,  # ← 여기가 핵심 변경점 (기존: label)
     )
     publish_diagnosis(
         key_audit_id=req.audit_id,

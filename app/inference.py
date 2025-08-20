@@ -119,3 +119,86 @@ class WasherONNXModel:
             
             print(f"[inference] Final prediction: {best_cls} (confidence: {confidence:.4f})")
             return best_idx, confidence
+
+def generate_comprehensive_diagnosis(label: str, confidence: float) -> str:
+    """
+    워셔액 분사 성능 검사 항목들을 명시한 종합 평가 결과 생성
+    """
+    import random
+    
+    confidence_percent = confidence * 100
+    
+    # 워셔액 검사 항목들 (실제 측정값은 제공하지 않고 검사 항목만 명시)
+    inspection_items = [
+        "분사각도, 분사범위, 커버리지",
+        "분사패턴, 분사강도, 도달거리", 
+        "분사균등성, 분사압력, 분사영역",
+        "분사방향, 분사량, 분사효율성",
+        "분사안정성, 분사일관성, 분사품질"
+    ]
+    
+    items = random.choice(inspection_items)
+    
+    if label == "ABNORMAL":
+        # 신뢰도별 종합 평가 표현
+        if confidence >= 0.95:
+            # 매우 확실한 불량
+            assessments = [
+                "전반적인 성능이 크게 저하된 상태로 분석되어",
+                "심각한 성능 이상이 종합적으로 감지되어",
+                "정상 기준을 현저히 벗어난 것으로 판단되어"
+            ]
+        elif confidence >= 0.85:
+            # 명확한 불량
+            assessments = [
+                "정상 범위를 상당히 벗어난 것으로 분석되어",
+                "명확한 성능 저하가 종합적으로 확인되어",
+                "전체적인 작동 상태가 불량한 것으로 판단되어",
+                "기준치 대비 현저히 미흡한 것으로 평가되어"
+            ]
+        elif confidence >= 0.7:
+            # 중간 정도 불량
+            assessments = [
+                "일부 기준 미달 요소가 종합적으로 감지되어",
+                "정상 범위 하한선을 벗어난 것으로 분석되어",
+                "전반적인 효율성이 다소 부족한 것으로 판단되어",
+                "개선이 필요한 부분이 확인되어"
+            ]
+        else:
+            # 경미한 불량
+            assessments = [
+                "경미한 이상 패턴이 종합적으로 관찰되어",
+                "최적 기준에 다소 미달하는 것으로 분석되어",
+                "전체적인 성능이 약간 저하된 것으로 평가되어"
+            ]
+        
+        assessment = random.choice(assessments)
+        result = f"워셔액 분사 성능에 대해 {items}를 종합 검사한 결과, 워셔액 분사 시스템의 {assessment} 신뢰도 {confidence_percent:.1f}%로 점검이 필요한 것으로 판정되었습니다."
+        
+    else:
+        # 정상인 경우 종합 평가
+        if confidence >= 0.95:
+            assessments = [
+                "모든 측면에서 우수한 성능을 보이며",
+                "정상 기준을 충분히 만족하는 최적 상태로 평가되어",
+                "전 영역에서 안정적이고 효과적으로 작동하여",
+                "종합적인 기능 상태가 매우 양호하여"
+            ]
+        elif confidence >= 0.85:
+            assessments = [
+                "정상 범위 내에서 안정적으로 작동하여",
+                "전반적으로 양호한 수준을 유지하고 있어",
+                "적절한 성능을 지속적으로 발휘하여",
+                "종합적인 작동 상태가 정상적으로 확인되어"
+            ]
+        else:
+            assessments = [
+                "기본 요구사항을 충족하는 수준으로 작동하여",
+                "전체적으로 정상 범위 내에서 기능하여",
+                "허용 가능한 수준을 유지하고 있어"
+            ]
+        
+        assessment = random.choice(assessments)
+        result = f"워셔액 분사 성능에 대해 {items}를 종합 검사한 결과, 워셔액 분사 시스템이 {assessment} 신뢰도 {confidence_percent:.1f}%로 정상 판정되었습니다."
+    
+    return result

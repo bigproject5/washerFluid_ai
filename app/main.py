@@ -9,19 +9,19 @@ try:
 except Exception:
     pass
 
-from schemas import (
+from .schemas import (
     TestStartedEventDTO,
     AiDiagnosisCompletedEventDTO,
     InferResponse,
     Prediction,
     InferenceMetrics,
 )
-from frame_selector import select_topk_spray_frames
-from inference import WasherONNXModel, generate_comprehensive_diagnosis  # ← 함수 import 추가
-from kafka_producer import publish_diagnosis
-from kafka_consumer import start_background_consumer   # ★ 컨슈머 시작용
-from config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
-from s3_io import download_s3_to_temp, upload_bytes_to_s3
+from .frame_selector import select_topk_spray_frames
+from .inference import WasherONNXModel, generate_comprehensive_diagnosis  # ← 함수 import 추가
+from .kafka_producer import publish_diagnosis
+from .kafka_consumer import start_background_consumer   # ★ 컨슈머 시작용
+from .config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
+from .s3_io import download_s3_to_temp, upload_bytes_to_s3
 
 app = FastAPI(title="washerFluid_ai (ONNX)")
 MODEL = WasherONNXModel()

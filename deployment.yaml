@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: washerfluid-ai-deployment
+  labels:
+    app: washerfluid-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: washerfluid-ai
+  template:
+    metadata:
+      labels:
+        app: washerfluid-ai
+    spec:
+      containers:
+      - name: washerfluid-ai
+        image: 956463122808.dkr.ecr.ap-northeast-2.amazonaws.com/washer-fluid:v1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: operation-secrets
+              key: s3.accessKey
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: operation-secrets
+              key: s3.secretKey
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: operation-secrets
+              key: s3.bucket
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: operation-secrets
+              key: kafka.bootstrap.server

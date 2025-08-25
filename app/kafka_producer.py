@@ -1,6 +1,6 @@
 from kafka import KafkaProducer
 import json
-from config import KAFKA_BOOTSTRAP, KAFKA_TOPIC
+from .config import KAFKA_BOOTSTRAP, KAFKA_TOPIC
 
 _producer = None
 

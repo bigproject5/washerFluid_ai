@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from typing import Literal, Tuple, Dict
 import onnxruntime as ort
-from config import MODEL_PATH, IMG_SIZE, INDEX_TO_CLASS, ABN_IDX, NOR_IDX
+from .config import MODEL_PATH, IMG_SIZE, INDEX_TO_CLASS, ABN_IDX, NOR_IDX
 
 def softmax(x):
     """Softmax 함수"""

@@ -6,7 +6,7 @@ from botocore.config import Config
 BUCKET = os.getenv("S3_BUCKET", "")
 ENDPOINT = os.getenv("AWS_S3_ENDPOINT")  # MinIO면 http://localhost:9000
 FORCE_PATH = os.getenv("AWS_S3_FORCE_PATH_STYLE", "true").lower() == "true"
-REGION = os.getenv("AWS_REGION", "us-east-1")
+REGION = os.getenv("AWS_REGION", "ap-northeast-2")
 
 _cfg = Config(
     signature_version="s3v4",

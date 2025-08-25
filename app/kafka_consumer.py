@@ -1,13 +1,13 @@
 import threading, json, time
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
-from config import KAFKA_BOOTSTRAP
-from schemas import Prediction, InferenceMetrics
-from s3_io import download_s3_to_temp, upload_bytes_to_s3
-from frame_selector import select_topk_spray_frames
-from inference import WasherONNXModel  # ← 원본과 동일하게 유지
-from config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
-from kafka_producer import publish_diagnosis
+from .config import KAFKA_BOOTSTRAP
+from .schemas import Prediction, InferenceMetrics
+from .s3_io import download_s3_to_temp, upload_bytes_to_s3
+from .frame_selector import select_topk_spray_frames
+from .inference import WasherONNXModel  # ← 원본과 동일하게 유지
+from .config import TOPK, METHOD, THR_VIDEO, FRAME_EVERY_SEC
+from .kafka_producer import publish_diagnosis
 
 MODEL = WasherONNXModel()
 
@@ -64,7 +64,7 @@ def _process(event: dict):
         # ★ 상세 판정 문장 생성 - 함수를 지연 import로 안전하게 처리
         print(f"[kafka_consumer] Generating detailed diagnosis...")
         try:
-            from inference import generate_comprehensive_diagnosis  # ← 지연 import
+            from .inference import generate_comprehensive_diagnosis  # ← 지연 import
             detailed_diagnosis = generate_comprehensive_diagnosis(label, p)
             print(f"[kafka_consumer] Detailed diagnosis: {detailed_diagnosis}")
         except ImportError as e:
